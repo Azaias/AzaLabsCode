@@ -1,0 +1,19 @@
+{
+  "data": [
+    {
+      "id": "anthropic/claude-sonnet-4",
+      "name": "Anthropic: Claude Sonnet 4",
+      "context_length": 200000,
+      "architecture": {"input_modalities": ["text", "image"]},
+      "top_provider": {"max_completion_tokens": 64000},
+      "supported_parameters": ["tools", "reasoning", "max_tokens"],
+      "pricing": {"prompt": "0.000003", "completion": "0.000015", "image": "0", "request": "0"}
+    },
+    {
+      "id": "x/minimal",
+      "context_length": null,
+      "pricing": {"prompt": "not-a-number"}
+    },
+    "this entry is not an object"
+  ]
+}

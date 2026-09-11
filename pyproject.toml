@@ -1,0 +1,244 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "azalabscode"
+version = "0.1.0"
+description = "An owned, extensible async agentic harness in Python"
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "Izaiah Meyer" }]
+dependencies = [
+    "pydantic>=2.7",
+    "httpx[http2]>=0.27",
+    "anyio>=4.3",
+    "textual>=0.80",
+    "trafilatura>=1.8",
+    "typer>=0.12",
+    "rich>=13.7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "pytest-textual-snapshot>=0.4",
+    "respx>=0.21",
+    "hypothesis>=6.100",
+    "import-linter>=2.0",
+    "ruff>=0.5",
+    "pyright>=1.1.370",
+]
+# R-X-7 asks for a `docs/` tree built with mkdocs. It is a separate extra rather than
+# part of `dev`: no test imports it, `tests/test_docs_architecture.py` checks the tree
+# and the nav without it, and spec §3's dependency list does not have it -- so a docs
+# generator should not be in the install a workflow author needs. `mkdocs build`
+# is the only thing that requires this extra.
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+]
+
+# The CLIs plan decision D6 asks for. `azc` is the coding agent -- the one meant for
+# daily use; the other two ship as commands because a reference workflow you cannot
+# run without knowing its module path is a demo, not a reference.
+[project.scripts]
+azc = "workflows.coding_agent.cli:entrypoint"
+azalabs-fusion = "workflows.fusion.cli:entrypoint"
+azalabs-inspector = "workflows.inspector.cli:entrypoint"
+
+[tool.hatch.build.targets.wheel]
+# `workflows` is packaged alongside the harness because the three reference workflows
+# are the acceptance suite (G6) and the console scripts above are their entry points.
+# It stays *outside* `azalabscode` so import-linter contract 5 keeps proving that a
+# workflow reaches the harness only through its public API (R-X-6, R-A-4).
+packages = ["azalabscode", "workflows"]
+
+# ---------------------------------------------------------------------------
+# ruff
+# ---------------------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+# run_phases.py is the milestone driver, not part of the deliverable. Markdown is
+# excluded because ruff reformats Python blocks inside it, and intent/spec.md is a
+# governing document that a formatter has no business editing.
+extend-exclude = ["run_phases.py", "claude-code-main", "*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",      # pycodestyle / pyflakes
+    "I",                # isort
+    "UP",               # pyupgrade
+    "B",                # bugbear
+    "ASYNC",            # async correctness
+    "RUF",
+    "SIM",
+    "TID",              # tidy imports
+]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "B008",    # function call in default argument (typer idiom)
+    "SIM108",  # ternary-vs-if is a readability call, not a rule
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["azalabscode", "workflows"]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.lint.per-file-ignores]
+# ASYNC110/ASYNC240: a test may block the loop on a local temp file or spin on a
+# process double. Both rules are about not stalling a real run; a test that stalls
+# for a millisecond stalls nothing.
+# ASYNC109: the rule says to use an ambient `asyncio.timeout` instead of a `timeout`
+# parameter. There is no `pytest-timeout` in this project, so every wait helper in
+# `tests/harness.py` takes its own bound -- an unbounded wait for a state that never
+# arrives hangs the whole suite with no output, which is exactly what a control-layer
+# bug produces. The helpers implement the bound with `asyncio.timeout` internally.
+"tests/**" = ["B011", "ASYNC109", "ASYNC110", "ASYNC240"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ---------------------------------------------------------------------------
+# pyright
+# ---------------------------------------------------------------------------
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+include = ["azalabscode", "tests", "workflows", "scripts"]
+exclude = ["**/__pycache__", ".venv", "claude-code-main"]
+pythonVersion = "3.12"
+pythonPlatform = "All"
+typeCheckingMode = "standard"
+reportMissingTypeStubs = false
+# Discriminated unions narrow a base `type: str` to a Literal in each subclass.
+# Pydantic fields are mutable, so pyright reads that override as invariant.
+reportIncompatibleVariableOverride = false
+reportPrivateImportUsage = false
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "network: hits a real network endpoint; deselected by default in CI",
+    "slow: takes more than a couple of seconds",
+]
+filterwarnings = ["error"]
+
+# ---------------------------------------------------------------------------
+# import-linter -- the executable form of the layer contract (R-X-2, R-X-6)
+# ---------------------------------------------------------------------------
+
+[tool.importlinter]
+root_packages = ["azalabscode", "workflows"]
+include_external_packages = false
+exclude_type_checking_imports = false
+
+[[tool.importlinter.contracts]]
+name = "1. Layers depend strictly downward"
+type = "layers"
+containers = ["azalabscode"]
+exhaustive = true
+layers = [
+    "tui",
+    "control",
+    "workflows",
+    "providers | tools",
+    "contracts",
+    "events",
+    "messages",
+    "permissions",
+    "toolio",
+    "content",
+    "errors",
+    "cancellation | ids | runstate | schema | sync",
+]
+
+[[tool.importlinter.contracts]]
+name = "2. Leaf-facing layers never import upward"
+type = "forbidden"
+source_modules = ["azalabscode.tools", "azalabscode.providers"]
+forbidden_modules = [
+    "azalabscode.workflows",
+    "azalabscode.control",
+    "azalabscode.tui",
+]
+
+[[tool.importlinter.contracts]]
+name = "3. workflows never imports control"
+type = "forbidden"
+source_modules = ["azalabscode.workflows"]
+forbidden_modules = ["azalabscode.control", "azalabscode.tui"]
+
+[[tool.importlinter.contracts]]
+name = "4. providers and tools are independent"
+type = "independence"
+modules = ["azalabscode.providers", "azalabscode.tools"]
+
+[[tool.importlinter.contracts]]
+name = "5. Reference workflows use the public API only"
+type = "forbidden"
+source_modules = ["workflows"]
+# Direct imports only. A reference workflow reaching `azalabscode.messages` through
+# the public `azalabscode` re-export is the intended path (R-X-6); reaching it by
+# naming the private module is not.
+allow_indirect_imports = true
+forbidden_modules = [
+    "azalabscode.schema",
+    "azalabscode.ids",
+    "azalabscode.errors",
+    "azalabscode.cancellation",
+    "azalabscode.runstate",
+    "azalabscode.content",
+    "azalabscode.toolio",
+    "azalabscode.permissions",
+    "azalabscode.messages",
+    "azalabscode.events",
+    "azalabscode.contracts",
+    "azalabscode.sync",
+    "azalabscode.providers.*",
+    "azalabscode.providers.**",
+    "azalabscode.tools.*",
+    "azalabscode.tools.**",
+    "azalabscode.workflows.*",
+    "azalabscode.workflows.**",
+    "azalabscode.control.*",
+    "azalabscode.control.**",
+    "azalabscode.tui.*",
+    "azalabscode.tui.**",
+]
+
+[[tool.importlinter.contracts]]
+name = "6. The UI sees events and the Controller, nothing else"
+type = "forbidden"
+# R-U-1: "The UI layer consumes only the event stream and the `Controller` API. It
+# has no access to node internals." The layers contract puts `tui` on top, which
+# permits it to import anything below; this is the half that says it must not. A
+# widget that reached for an `AgentLoop` or a `Tool` would still be a legal layer
+# graph and an illegal UI.
+#
+# Direct imports only: importing `Controller` legitimately drags in
+# `workflows.state` two hops down, and forbidding that would forbid the seam the
+# UI is supposed to use. What this catches is a widget *naming* an `AgentLoop`, a
+# `Tool` or a `Provider`.
+allow_indirect_imports = true
+source_modules = ["azalabscode.tui"]
+forbidden_modules = [
+    "azalabscode.workflows",
+    "azalabscode.providers",
+    "azalabscode.tools",
+]

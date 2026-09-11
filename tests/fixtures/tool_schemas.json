@@ -1,0 +1,375 @@
+{
+  "delegate": {
+    "description": "Hand a self-contained task to a subagent and get its answer back.\n\nThe subagent starts with no knowledge of this conversation. Everything it needs must be in `task`: what to look at, what to produce, and what \"done\" means. A task like \"check the other thing\" will fail, because it has no idea what the other thing is.\n\nUse this when a task is large and separable -- surveying an unfamiliar part of the codebase, reading a long file to answer one question, running an investigation whose intermediate steps you do not need to see. The subagent's exploration stays out of your context; you get its conclusion.\n\nDo not use it for work you could do in one or two tool calls yourself, or for anything requiring back-and-forth: you get one answer, with no opportunity to ask a follow-up question.\n\n`spec` names which kind of subagent to run; the available names are listed in the parameter. `tools` narrows what it may use. In manual permission mode a subagent only gets tools that never need approval, so a task requiring edits will come back unfinished.",
+    "name": "delegate",
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Parameters for `delegate`.",
+      "properties": {
+        "max_turns": {
+          "anyOf": [
+            {
+              "maximum": 200,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Cap the subagent's model\u2194tool iterations.",
+          "title": "Max Turns"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Override the subagent's model.",
+          "title": "Model"
+        },
+        "spec": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Which agent spec to run. Defaults to the first available.",
+          "title": "Spec"
+        },
+        "task": {
+          "description": "The complete, self-contained task for the subagent.",
+          "minLength": 1,
+          "title": "Task",
+          "type": "string"
+        },
+        "tools": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Restrict the subagent to these tool names.",
+          "title": "Tools"
+        }
+      },
+      "required": [
+        "task"
+      ],
+      "type": "object"
+    }
+  },
+  "edit_file": {
+    "description": "Replace an exact string in a file with another one.\n\nRead the file first. edit_file refuses to touch a file you have not read this session, or one that changed after you read it.\n\n`old` must appear exactly once. If it appears zero times or more than once the edit is refused and you are told the count -- pass a longer `old` with surrounding lines until it is unique, or set replace_all=True if you genuinely mean every occurrence.\n\n`old` must match the file byte for byte, apart from line endings, which are handled for you. Copy it out of the read_file output; do not retype it. Two things break this most often: including the `   12| ` line-number prefix from read_file (it is not in the file), and reconstructing indentation instead of copying it.\n\nTo delete text, pass an empty `new`. To insert, include an anchor line in both `old` and `new`.\n\nThe result and the approval prompt both show a unified diff of the change.",
+    "name": "edit_file",
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Parameters for `edit_file`.",
+      "properties": {
+        "new": {
+          "description": "Replacement text. Empty string deletes the match.",
+          "title": "New",
+          "type": "string"
+        },
+        "old": {
+          "description": "Exact text to replace. Must be unique unless replace_all.",
+          "title": "Old",
+          "type": "string"
+        },
+        "path": {
+          "description": "File to edit, absolute or relative to the workspace root.",
+          "title": "Path",
+          "type": "string"
+        },
+        "replace_all": {
+          "default": false,
+          "description": "Replace every occurrence instead of requiring exactly one.",
+          "title": "Replace All",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "path",
+        "old",
+        "new"
+      ],
+      "type": "object"
+    }
+  },
+  "glob": {
+    "description": "Find files whose path matches a glob pattern, most recently modified first.\n\nPatterns are matched against the path relative to the search root, using `/` as the separator on every platform. `**` crosses directories, `*` does not.\n\n  *.py                 Python files at the top of the search root\n  **/*.py              Python files anywhere below it\n  src/**/test_*.py     test files anywhere under src/\n\nFiles ignored by .gitignore are skipped, as are .git, node_modules, __pycache__ and virtualenvs. Directories are never returned, only files.\n\nUse this to locate files by name. To search inside files, use grep. If you know the exact path already, just read_file it -- a glob to confirm a file exists is a wasted turn.\n\nAt most `limit` paths come back; if there were more you are told so, and a narrower pattern is a better answer than a bigger limit.",
+    "name": "glob",
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Parameters for `glob`.",
+      "properties": {
+        "limit": {
+          "default": 500,
+          "description": "Maximum paths to return.",
+          "maximum": 10000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "path": {
+          "default": ".",
+          "description": "Directory to search under, relative to the workspace root.",
+          "title": "Path",
+          "type": "string"
+        },
+        "pattern": {
+          "description": "Glob pattern, e.g. '**/*.py' or 'src/**/test_*.py'.",
+          "title": "Pattern",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pattern"
+      ],
+      "type": "object"
+    }
+  },
+  "grep": {
+    "description": "Search file contents with a regular expression.\n\nSyntax is Rust regex when ripgrep is installed and Python `re` otherwise; they agree on everything except lookaround and backreferences, which ripgrep does not support. Escape regex metacharacters if you want a literal match: `foo\\(bar\\)`.\n\noutput_mode:\n  content            matching lines as `path:line: text` (the default)\n  files_with_matches just the paths -- use this first when you want to know where something lives, then read the interesting files\n  count              matches per file\n\nNarrow the search with `glob` ('*.py', '**/test_*.py') and `path`. Use `context` to get surrounding lines, and `case_insensitive` rather than building `[Ff][Oo][Oo]`.\n\nResults stop at `limit` and you are told when there were more, with the offset to continue from. A search that times out says so -- it does not report zero matches.\n\nFiles ignored by .gitignore are skipped.",
+    "name": "grep",
+    "parameters": {
+      "$defs": {
+        "OutputMode": {
+          "enum": [
+            "content",
+            "files_with_matches",
+            "count"
+          ],
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Parameters for `grep`.",
+      "properties": {
+        "case_insensitive": {
+          "default": false,
+          "description": "Match without regard to case.",
+          "title": "Case Insensitive",
+          "type": "boolean"
+        },
+        "context": {
+          "default": 0,
+          "description": "Lines of context around each match.",
+          "maximum": 20,
+          "minimum": 0,
+          "title": "Context",
+          "type": "integer"
+        },
+        "glob": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Only search files matching this glob, e.g. '**/*.py'.",
+          "title": "Glob"
+        },
+        "limit": {
+          "default": 200,
+          "description": "Maximum results to return.",
+          "maximum": 5000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "offset": {
+          "default": 0,
+          "description": "Skip this many results; use with limit to paginate.",
+          "minimum": 0,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "output_mode": {
+          "$ref": "#/$defs/OutputMode",
+          "default": "content",
+          "description": "'content', 'files_with_matches', or 'count'."
+        },
+        "path": {
+          "default": ".",
+          "description": "File or directory to search, relative to the workspace root.",
+          "title": "Path",
+          "type": "string"
+        },
+        "pattern": {
+          "description": "Regular expression to search for.",
+          "title": "Pattern",
+          "type": "string"
+        }
+      },
+      "required": [
+        "pattern"
+      ],
+      "type": "object"
+    }
+  },
+  "read_file": {
+    "description": "Read a text file from the workspace and return its contents with line numbers.\n\nUse this before editing any file: write_file and edit_file both refuse to touch a file you have not read, because a change made from a guess about the contents overwrites whatever is actually there.\n\nOutput is `   12| text`, one line per source line. The line numbers are for your reference when choosing an offset; they are not part of the file, so never include them in the `old` string you pass to edit_file.\n\nReads at most `limit` lines starting at line `offset` (1-based). The default window is 2000 lines. If the file is longer you get a note saying so and the offset to use for the next page.\n\nAlso reads images (png, jpg, gif, webp), which are returned to you as an image rather than as text. Other binary files are refused: read them with the shell if you really need to.\n\nCommon mistakes: passing a directory instead of a file; passing a line range as `offset=10, limit=20` when you meant lines 10 to 20 (that is `offset=10, limit=11`); re-reading an unchanged file you have already read this session.",
+    "name": "read_file",
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Parameters for `read_file`.",
+      "properties": {
+        "limit": {
+          "default": 2000,
+          "description": "Maximum number of lines to return.",
+          "maximum": 50000,
+          "minimum": 1,
+          "title": "Limit",
+          "type": "integer"
+        },
+        "offset": {
+          "default": 1,
+          "description": "1-based line number to start reading from.",
+          "minimum": 1,
+          "title": "Offset",
+          "type": "integer"
+        },
+        "path": {
+          "description": "File to read, absolute or relative to the workspace root.",
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    }
+  },
+  "web_fetch": {
+    "description": "Fetch a URL and return its content as text.\n\nHTML is converted to readable text with the navigation, ads and boilerplate removed. JSON and plain text come back as they are. Pass raw=True to get the unprocessed body instead, which you want for an API response you intend to parse.\n\nOnly http and https. Requests to localhost, private networks and link-local addresses are refused, and the address is checked after DNS resolution, so a public hostname pointing at an internal address is refused too.\n\nRedirects within the same site are followed. A redirect to a different host is not -- you get told the new URL and can fetch it yourself if you want it. This keeps every host you actually reach visible in the transcript.\n\nContent is truncated to `max_chars`. If a page matters more than that, fetch it and then narrow with a second, more specific request.\n\nThis tool reads pages. It cannot log in, submit forms, or run JavaScript, so a page that renders client-side will come back nearly empty.",
+    "name": "web_fetch",
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Parameters for `web_fetch`.",
+      "properties": {
+        "max_chars": {
+          "default": 40000,
+          "description": "Maximum characters to return.",
+          "maximum": 500000,
+          "minimum": 100,
+          "title": "Max Chars",
+          "type": "integer"
+        },
+        "raw": {
+          "default": false,
+          "description": "Return the body unprocessed instead of extracting readable text.",
+          "title": "Raw",
+          "type": "boolean"
+        },
+        "url": {
+          "description": "Absolute http(s) URL to fetch.",
+          "title": "Url",
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    }
+  },
+  "web_search": {
+    "description": "Search the web and get back a ranked list of titles, URLs and snippets.\n\nUse this to find pages. It does not return page contents -- pick the promising URLs out of the results and web_fetch them.\n\nWrite the query the way you would type it into a search box: keywords, not a sentence, and no boolean operators. If the first search is unhelpful, change the words rather than raising `n`; the tenth result is rarely the answer when the first three are wrong.\n\n`recency` restricts results by age when the answer is time-sensitive (a release, an incident, a version number). Leave it unset otherwise -- it discards good older sources.\n\nSnippets are search-engine summaries, not quotations. Do not cite them as if you had read the page.",
+    "name": "web_search",
+    "parameters": {
+      "$defs": {
+        "Recency": {
+          "enum": [
+            "hour",
+            "day",
+            "week",
+            "month",
+            "year"
+          ],
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Parameters for `web_search`.",
+      "properties": {
+        "n": {
+          "default": 10,
+          "description": "Maximum results to return.",
+          "maximum": 20,
+          "minimum": 1,
+          "title": "N",
+          "type": "integer"
+        },
+        "query": {
+          "description": "Search keywords.",
+          "minLength": 1,
+          "title": "Query",
+          "type": "string"
+        },
+        "recency": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recency"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Only results from the last hour/day/week/month/year."
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    }
+  },
+  "write_file": {
+    "description": "Write a complete file, creating it or replacing what is there.\n\nParent directories are created for you. The write is atomic: readers see either the old file or the new one, never a half-written one.\n\nIf the file already exists you must have read it first with read_file, and it must not have changed since. This is not a formality -- writing a file you have not read destroys whatever was in it, and \"I know what is in that file\" is wrong often enough to be worth a round trip.\n\nPrefer edit_file for changing part of an existing file. write_file rewrites the whole thing, so a one-line change becomes a whole-file diff that is much harder to review and much easier to get wrong.\n\n`content` is written exactly as given. Include the trailing newline if the file should have one.",
+    "name": "write_file",
+    "parameters": {
+      "additionalProperties": false,
+      "description": "Parameters for `write_file`.",
+      "properties": {
+        "content": {
+          "description": "The complete new contents of the file.",
+          "title": "Content",
+          "type": "string"
+        },
+        "path": {
+          "description": "File to write, absolute or relative to the workspace root.",
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ],
+      "type": "object"
+    }
+  }
+}

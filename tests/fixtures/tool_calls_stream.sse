@@ -1,0 +1,18 @@
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{"content":"Reading both files."}}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_aaa","type":"function","function":{"name":"read_file","arguments":""}}]}}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\"path\":"}}]}}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":" \"src/app.py\"}"}}]}}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"id":"call_bbb","type":"function","function":{"name":"grep","arguments":"{\"pattern\""}}]}}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":1,"function":{"arguments":": \"TODO\"}"}}]}}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+
+data: {"id":"gen-3","model":"x/tooler","choices":[],"usage":{"prompt_tokens":100,"completion_tokens":30}}
+
+data: [DONE]
+

@@ -1,0 +1,42 @@
+# R-X-7 asks for "a docs/ tree built with mkdocs". mkdocs is an optional extra
+# (`pip install -e ".[docs]"`), not a runtime or dev dependency: nothing in the test
+# suite imports it, and a docs generator has no business in the install a workflow
+# author needs. `tests/test_docs_architecture.py` asserts every page here exists and
+# every page on disk is in this nav, so the tree cannot drift from the config
+# whether or not mkdocs itself is installed.
+site_name: azalabscode
+site_description: An owned, extensible async agentic harness in Python
+repo_url: https://github.com/  # no remote yet; the tree is local-only
+docs_dir: docs
+use_directory_urls: false
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - content.code.copy
+  palette:
+    - scheme: default
+      toggle: { icon: material/weather-night, name: Dark }
+    - scheme: slate
+      toggle: { icon: material/weather-sunny, name: Light }
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Writing a workflow: writing-a-workflow.md
+  - Reference workflows: reference-workflows.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+
+validation:
+  links:
+    absolute_links: relative_to_docs
+    unrecognized_links: warn

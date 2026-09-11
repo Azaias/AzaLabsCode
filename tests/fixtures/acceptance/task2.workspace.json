@@ -1,0 +1,8 @@
+{
+  "README.md": "# sample\n\nA tiny sample project.\n\n## Usage\n\n    python cli.py PATH\n",
+  "cli.py": "\"\"\"A tiny CLI, for the acceptance tasks to change.\"\"\"\n\nimport argparse\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"path\")\n    args = parser.parse_args()\n    print(args.path)\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "lib.py": "\"\"\"Two functions, one of them on its way out.\"\"\"\n\n\ndef deprecated_fn(value):\n    \"\"\"The old one.\"\"\"\n\n    return value * 2\n\n\ndef new_fn(value):\n    \"\"\"The new one.\"\"\"\n\n    return value * 2\n",
+  "test_lib.py": "from lib import new_fn\n\n\ndef test_new_fn():\n    assert new_fn(2) == 4\n",
+  "use_a.py": "from lib import new_fn\n\n\ndef total(values):\n    return sum(new_fn(value) for value in values)\n",
+  "use_b.py": "import lib\n\n\ndef double(value):\n    return lib.new_fn(value)\n"
+}

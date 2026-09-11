@@ -1,0 +1,6 @@
+data: {"id":"gen-5","model":"x/flaky","choices":[{"index":0,"delta":{"content":"Starting"}}]}
+
+data: {"id":"gen-5","model":"x/flaky","choices":[{"index":0,"delta":{"content":" the answ"}}]}
+
+data: {"error":{"code":502,"message":"upstream provider disconnected"}}
+

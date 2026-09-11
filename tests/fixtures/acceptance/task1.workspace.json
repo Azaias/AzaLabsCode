@@ -1,0 +1,8 @@
+{
+  "README.md": "# sample\n\nA tiny sample project.\n\n## Usage\n\n    python cli.py PATH [--verbose]\n\n### Options\n\n- `PATH`: The path to process\n- `--verbose`: Print the resolved absolute path\n",
+  "cli.py": "\"\"\"A tiny CLI, for the acceptance tasks to change.\"\"\"\n\nimport argparse\nfrom pathlib import Path\n\n\ndef main():\n    parser = argparse.ArgumentParser()\n    parser.add_argument(\"path\")\n    parser.add_argument(\"--verbose\", action=\"store_true\", help=\"print the resolved absolute path\")\n    args = parser.parse_args()\n    print(args.path)\n    if args.verbose:\n        resolved_path = Path(args.path).resolve()\n        print(f\"Resolved path: {resolved_path}\")\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "lib.py": "\"\"\"Two functions, one of them on its way out.\"\"\"\n\n\ndef deprecated_fn(value):\n    \"\"\"The old one.\"\"\"\n\n    return value * 2\n\n\ndef new_fn(value):\n    \"\"\"The new one.\"\"\"\n\n    return value * 2\n",
+  "test_lib.py": "from lib import new_fn\n\n\ndef test_new_fn():\n    assert new_fn(2) == 4\n",
+  "use_a.py": "from lib import deprecated_fn\n\n\ndef total(values):\n    return sum(deprecated_fn(value) for value in values)\n",
+  "use_b.py": "import lib\n\n\ndef double(value):\n    return lib.deprecated_fn(value)\n"
+}

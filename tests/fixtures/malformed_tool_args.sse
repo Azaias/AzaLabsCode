@@ -1,0 +1,8 @@
+data: {"id":"gen-4","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_bad","type":"function","function":{"name":"write_file","arguments":"{\"path\": \"a.txt\", "}}]}}]}
+
+data: {"id":"gen-4","model":"x/tooler","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"content\""}}]}}]}
+
+data: {"id":"gen-4","model":"x/tooler","choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}
+
+data: [DONE]
+

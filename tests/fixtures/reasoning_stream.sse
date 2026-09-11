@@ -1,0 +1,14 @@
+data: {"id":"gen-2","model":"x/thinker","choices":[{"index":0,"delta":{"reasoning":"Let me "}}]}
+
+data: {"id":"gen-2","model":"x/thinker","choices":[{"index":0,"delta":{"reasoning":"check that. "}}]}
+
+data: {"id":"gen-2","model":"x/thinker","choices":[{"index":0,"delta":{"reasoning_details":[{"type":"reasoning.text","text":"Confirmed.","signature":"sig-abc"}]}}]}
+
+data: {"id":"gen-2","model":"x/thinker","choices":[{"index":0,"delta":{"content":"Yes."}}]}
+
+data: {"id":"gen-2","model":"x/thinker","choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}
+
+data: {"id":"gen-2","model":"x/thinker","choices":[],"usage":{"prompt_tokens":40,"completion_tokens":12,"completion_tokens_details":{"reasoning_tokens":9}}}
+
+data: [DONE]
+

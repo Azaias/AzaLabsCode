@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "match": "by_request_hash",
+  "turns": [
+    {
+      "schema_version": 1,
+      "key": "ff7b4b116214a94f8fb04c7d12b44db7e49c1326fdd5f0ffdac94a661876a4a0",
+      "text": "",
+      "text_chunks": null,
+      "reasoning": "",
+      "tool_calls": [
+        {
+          "schema_version": 1,
+          "call_id": "call_slow_one",
+          "name": "slow",
+          "arguments": {
+            "label": "one"
+          },
+          "arguments_chunks": null
+        }
+      ],
+      "finish_reason": "tool_calls",
+      "usage": null,
+      "delay_s": 0.0,
+      "chunk_delay_s": 0.0,
+      "error": null,
+      "error_after_chunks": 0
+    },
+    {
+      "schema_version": 1,
+      "key": "486c4e95b255dd82bd72042ea54a19fcde3fc56103f47f33a9d337877bd9b889",
+      "text": "the slow thing reported in",
+      "text_chunks": null,
+      "reasoning": "",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "usage": null,
+      "delay_s": 0.0,
+      "chunk_delay_s": 0.0,
+      "error": null,
+      "error_after_chunks": 0
+    },
+    {
+      "schema_version": 1,
+      "key": "ccf20f03e2aa46a93d18eb4e446418edd45a48a7f6ae34b1caf51d2c6e093ea2",
+      "text": "the slow thing reported in",
+      "text_chunks": null,
+      "reasoning": "",
+      "tool_calls": [],
+      "finish_reason": "stop",
+      "usage": null,
+      "delay_s": 0.0,
+      "chunk_delay_s": 0.0,
+      "error": null,
+      "error_after_chunks": 0
+    }
+  ],
+  "model_info": {}
+}

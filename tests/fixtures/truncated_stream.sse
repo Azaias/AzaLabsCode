@@ -1,0 +1,2 @@
+data: {"id":"gen-6","model":"x/cut","choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"id":"call_ccc","type":"function","function":{"name":"glob","arguments":"{\"pattern\": \"**/*.py\"}"}}]}}]}
+
